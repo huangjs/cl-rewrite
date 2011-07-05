@@ -1,0 +1,16 @@
+* purpose
+
+- write type specialized definition easier
+- lazy instantiation
+- auto-recompilation
+- use declaration to communicate with CL
+- extensible type unification
+- arbitrary type specification
+
+* examples
+
+- defun/t
+
+  (defun/t (foo fixnum) ((x fixnum) &optional (y fixnum 0))
+    ...)
+
