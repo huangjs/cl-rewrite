@@ -1,0 +1,29 @@
+
+* examples
+
+1.
+(defun/t foo ((x T1) &optional (y T2 0))
+  (the T1 (+ x y)))
+
+(instantiate-foo fixnum fixnum)
+
+=>
+
+(defun foo-fixnum-fixnum (x &optional (y 0))
+  (declare (type fixnum x)
+           (type fixnum y))
+  (the fixnum (+ x y)))
+
+2. with-template-vars
+(with-template-vars (T1 T2 T3)
+  (defun/t foo ((x T1) &optional (y T2 0))
+    (+ T3 x y)))
+
+(instantiate-foo fixnum fixnum integer)
+
+=>
+
+(defun foo-fixnum-fixnum-integer (x &optional (y 0))
+  (the integer (+ x y)))
+
+

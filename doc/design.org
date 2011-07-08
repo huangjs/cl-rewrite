@@ -1,7 +1,8 @@
 * purpose
 
 - write type specialized definition easier
-- lazy instantiation
+  - template variable
+  - auto instantiation
 - auto-recompilation
 - use declaration to communicate with CL
 - extensible type unification
