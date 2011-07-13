@@ -1,29 +1,87 @@
+* goals
 
-* examples
+1. template system
+2. type based generic programming
+3. TODO: term rewriting 
 
-1.
-(defun/t foo ((x T1) &optional (y T2 0))
-  (the T1 (+ x y)))
+* template system
 
-(instantiate-foo fixnum fixnum)
+** template
 
-=>
+- form (can be partially instantiated by tapply)
+- variable bindings
 
-(defun foo-fixnum-fixnum (x &optional (y 0))
-  (declare (type fixnum x)
-           (type fixnum y))
-  (the fixnum (+ x y)))
+** functions/macros
 
-2. with-template-vars
-(with-template-vars (T1 T2 T3)
-  (defun/t foo ((x T1) &optional (y T2 0))
-    (+ T3 x y)))
+- tlambda
 
-(instantiate-foo fixnum fixnum integer)
+  (tlambda (tvars...)
+    form)
 
-=>
+- tapply
 
-(defun foo-fixnum-fixnum-integer (x &optional (y 0))
-  (the integer (+ x y)))
+  (tapply template variable-substitution-rule)
+
+  variable substitution rule can reference bounded variables.
+  e.g.
+  (tapply template (T3 (merge T1 T2)))
+
+- teval
+  
+  in tapply environment,
+  (teval form)
+  =>
+  substitute variables, evaluate the form
+  
+- deftemplate
+
+  named tlambda, and registered in a global table
+  
+- instantiate-template
+
+  tapply and make sure all template variables are substituted in the
+  final form. return only the form without environment.
+
+
+* type based generic programming
+
+** functions/macros
+
+- defun/t
+
+  e.g.
+
+  (defun/t (foo T1) ((x T1) &optional (y T1 0))
+    (the T1 (+ x y)))
+
+  =>
+
+  (deftemplate foo (T1)
+    (progn
+     (declaim (ftype (function (T1 T1) T1)))
+     (defun foo (x &optional (y 0))
+       (declare (type T1 x y))
+       (the T1 (+ x y)))
+
+- instantiate-function-by-types
+- get-function-by-types
+  
+  retrieve the instantiated function, if non, calls
+  instantiate-function-by-types
+
+** featuers
+
+- retrieve type info from declarations
+
+  TODO: maybe retrieve type info from compiler's inference result in
+  the future, need unification
+
+- lazy instantiation
+
+- TODO: auto recompilation
+
+- TODO: complex type specification and unification
+
+- TODO: unification rule/type computation
 
 
