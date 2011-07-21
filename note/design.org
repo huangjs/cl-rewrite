@@ -24,7 +24,7 @@
 
   variable substitution rule can reference bounded variables.
   e.g.
-  (tapply template (T3 (merge T1 T2)))
+  (tapply template ((T3 (merge T1 T2))))
 
 - teval
   
@@ -78,7 +78,7 @@
 
 - lazy instantiation
 
-- TODO: auto recompilation
+- auto recompilation
 
 - TODO: complex type specification and unification
 

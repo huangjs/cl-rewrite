@@ -10,7 +10,8 @@
   :components
   ((:module src
             :components ((:file "packages")
-                         (:file "rewrite" :depends-on ("packages"))
+                         (:file "utils" :depends-on ("packages"))
+                         (:file "template" :depends-on ("utils"))
                          )))
   :depends-on (:alexandria
                ;; :parse-declarations-1.0
