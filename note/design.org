@@ -13,34 +13,55 @@
 
 ** functions/macros
 
-- tlambda
+- make-new-template [function]
+
+  (make-new-template vars body)
+
+  will return a template with empty bindings
+
+- tlambda [macro]
 
   (tlambda (tvars...)
     form)
 
-- tapply
+  for convenience
 
-  (tapply template variable-substitution-rule)
+- tapply [macro] non-destructive
+
+  (tapply template variable-substitution-rules)
 
   variable substitution rule can reference bounded variables.
   e.g.
-  (tapply template ((T3 (merge T1 T2))))
+  (tapply template (T1 fixnum) (T2 (if (eq T1 'fixnum) 'fixnum 'number)))
 
-- teval
-  
-  in tapply environment,
-  (teval form)
-  =>
-  substitute variables, evaluate the form
-  
-- deftemplate
+  NOTE: substitution rules will be evaluated, can be an arbitrary lisp form
+  NOTE: it support currying
 
-  named tlambda, and registered in a global table
+- deftemplate [macro]
+
+  define named tlambda, and registered in a global table
   
-- instantiate-template
+- instantiate-template [function] non-destructive
 
   tapply and make sure all template variables are substituted in the
-  final form. return only the form without environment.
+  final form. return only the form.
+
+** examples
+
+- simple example
+
+CL-REWRITE> (deftemplate ex1 (T1 T2) (the T1 (+ x (the T2 (* y z)))))
+#S(TEMPLATE :VARS (T1 T2)
+            :BINDINGS NIL
+            :BODY (THE T1 (+ X (THE T2 (* Y Z)))))
+
+CL-REWRITE> (tapply (get-template 'ex1) (t1 'fixnum) (t2 (if (eq t1 'fixnum) 'integer 'number)))
+#S(TEMPLATE :VARS (T1 T2)
+            :BINDINGS ((T1 FIXNUM) (T2 INTEGER))
+            :BODY (THE T1 (+ X (THE T2 (* Y Z)))))
+
+CL-REWRITE> (instantiate-template * )
+(THE FIXNUM (+ X (THE INTEGER (* Y Z))))
 
 
 * type based generic programming
@@ -84,4 +105,7 @@
 
 - TODO: unification rule/type computation
 
+- TODO: allegro unboxed function hack
+
+- TODO: customized declaration
 

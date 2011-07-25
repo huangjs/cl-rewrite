@@ -8,7 +8,11 @@
 
 (defun variable-type-from-env (var env)
   nil
+  #+allegro (second (find 'cl:type (nth-value 2 (sys:variable-information var env)) :key #'first))
   #+sbcl (cdr (assoc 'cl:type (nth-value 2 (sb-cltl2:variable-information var env)))))
+
+(defmacro local-variable-type (var &environment env)
+  (variable-type-from-env var env))
 
 (defmacro gethash-or-set (key table gen-value)
   (alexandria:with-unique-names (val present)
@@ -18,3 +22,4 @@
          (if ,present
              ,val
              (setf (gethash ,key ,table) ,gen-value))))))
+

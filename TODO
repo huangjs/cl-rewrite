@@ -1,2 +1,4 @@
 * setf macro template
 * thread-safety
+* fmakunbound
+

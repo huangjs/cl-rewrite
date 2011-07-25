@@ -1,0 +1,4 @@
+* allegrocl
+
+- types from declaration will get normalized
+
