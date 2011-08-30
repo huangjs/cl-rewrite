@@ -11,8 +11,8 @@
   ((:module src
             :components ((:file "packages")
                          (:file "utils" :depends-on ("packages"))
-                         (:file "template" :depends-on ("utils"))
-                         (:file "generics" :depends-on ("template"))
+                         ;; (:file "template" :depends-on ("utils"))
+                         ;; (:file "generics" :depends-on ("template"))
                          )))
   :depends-on (:alexandria
                ;; :parse-declarations-1.0

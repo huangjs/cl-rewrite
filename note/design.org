@@ -1,10 +1,54 @@
 * goals
 
-1. template system
-2. type based generic programming
-3. TODO: term rewriting 
+1. template specialization
+2. generic programming
+3. genetic programming
+4. partial evaluation
 
-* template system
+* design
+
+- level 0 (template system)
+
+  - template variable
+  - variable properties
+    - concepts
+    - constranits
+    - etc.
+    - add or remove properties
+  - template recursion
+    - expand templates recursively
+    - max level of expansion
+  - compile-time dispatches (e.g. static-if)
+    - static-if
+    - static-cond
+    - static-case
+  - separate definition
+    - chain of matching (lexical order)
+    - doesn't change the match order when redefined
+    - reset-template
+  - call-next-template
+    - call next with relaxed variable properties
+  - program construction based on template variables
+    - static-eval with proper bindings 
+  - lazy instantiation
+    - only instantiate when requested so template variables'
+      properties can be specified iteratively
+
+- level 1 (generic programming)
+
+  - syntax for type based specialization
+  - syntax for constant specialization
+  - syntax for type relation specialization
+
+- level 2 
+
+  - genetic programming
+  - partial evaluation
+
+
+
+* DEPRECATED OLD template system
+  CLOSED: [2011-08-30 火 18:33]
 
 ** template
 
@@ -63,8 +107,8 @@ CL-REWRITE> (tapply (get-template 'ex1) (t1 'fixnum) (t2 (if (eq t1 'fixnum) 'in
 CL-REWRITE> (instantiate-template * )
 (THE FIXNUM (+ X (THE INTEGER (* Y Z))))
 
-
-* type based generic programming
+* DEPRECATED type based generic programming
+  CLOSED: [2011-08-30 火 18:32]
 
 ** functions/macros
 
