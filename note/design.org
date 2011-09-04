@@ -29,7 +29,7 @@
   - call-next-template
     - call next with relaxed variable properties
   - program construction based on template variables
-    - static-eval with proper bindings 
+    - static-eval with proper bindings
   - lazy instantiation
     - only instantiate when requested so template variables'
       properties can be specified iteratively
@@ -40,11 +40,10 @@
   - syntax for constant specialization
   - syntax for type relation specialization
 
-- level 2 
+- level 2
 
   - genetic programming
   - partial evaluation
-
 
 
 * DEPRECATED OLD template system
@@ -84,7 +83,7 @@
 - deftemplate [macro]
 
   define named tlambda, and registered in a global table
-  
+
 - instantiate-template [function] non-destructive
 
   tapply and make sure all template variables are substituted in the
@@ -130,7 +129,7 @@ CL-REWRITE> (instantiate-template * )
 
 - instantiate-function-by-types
 - get-function-by-types
-  
+
   retrieve the instantiated function, if non, calls
   instantiate-function-by-types
 
