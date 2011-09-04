@@ -23,3 +23,5 @@
              ,val
              (setf (gethash ,key ,table) ,gen-value))))))
 
+(defmacro walk-tree ((tree &key node-var place-var (copy-tree t)) &body body)
+  )
