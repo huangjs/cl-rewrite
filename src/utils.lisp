@@ -1,5 +1,9 @@
 (in-package :cl-rewrite)
 
+(defparameter *verbose-p* t)
+(defparameter *rebind-warning-p* t)
+(defparameter *debug-p* t)
+
 (defun interleave (list thing)
   (loop for l on list
         collect (first l)
@@ -23,5 +27,21 @@
              ,val
              (setf (gethash ,key ,table) ,gen-value))))))
 
-(defmacro walk-tree ((tree &key node-var place-var (copy-tree t)) &body body)
-  )
+(defmacro walk-tree ((tree &key copy-tree node-var place-var) &body body)
+  (once-only (tree)
+    (let ((node-var (or node-var (gensym "NODE-VAR")))
+          (place-var (or place-var (gensym "PLACE-VAR"))))
+      `(labels ((s (subtree place)
+                  (cond ((atom subtree)
+                         (when subtree
+                           (let ((,node-var subtree)
+                                 (,place-var place))
+                             (declare (ignorable ,node-var ,place-var))
+                             ,@body)))
+                        (t (let ((car (s (car subtree) subtree))
+                                 (cdr (s (cdr subtree) subtree)))
+                             (declare (ignorable car cdr))
+                             ,(when copy-tree
+                                `(cons car cdr)))))))
+         (s ,tree ,tree)))))
+

@@ -11,7 +11,8 @@
   ((:module src
             :components ((:file "packages")
                          (:file "utils" :depends-on ("packages"))
-                         ;; (:file "template" :depends-on ("utils"))
+                         (:file "template-variable" :depends-on ("utils"))
+                         (:file "template" :depends-on ("template-variable"))
                          ;; (:file "generics" :depends-on ("template"))
                          )))
   :depends-on (:alexandria

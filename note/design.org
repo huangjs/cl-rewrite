@@ -19,6 +19,7 @@
     - expand templates recursively
     - max level of expansion
   - compile-time dispatches (e.g. static-if)
+    - static-eval
     - static-if
     - static-cond
     - static-case
@@ -44,6 +45,18 @@
 
   - genetic programming
   - partial evaluation
+
+* generic programming
+
+** syntax for template variable
+
+- symbol
+
+  e.g. T1
+
+- list
+
+  e.g. (T2), (T3 template-variable-with-concept :concept sequence-class)
 
 
 * DEPRECATED OLD template system
