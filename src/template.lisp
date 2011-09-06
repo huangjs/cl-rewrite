@@ -1,6 +1,7 @@
 (in-package :cl-rewrite)
 
 (defvar *templates* (make-hash-table))
+(defvar *special-forms* '(static-eval static-if static-cond static-case))
 
 (defun find-template (name)
   (gethash name *templates*))
@@ -35,10 +36,15 @@
 (defgeneric instantiate-template (template))
 
 (defmethod copy-template ((template template))
-  (make-instance 'template
-                 :name (name-of template)
-                 :template-vars (mapcar #'copy-template-variable (template-vars-of template))
-                 :body (body-of template)))
+  (let* ((old (template-vars-of template))
+         (new (mapcar #'copy-template-variable old)))
+    (make-instance 'template
+                   :name (name-of template)
+                   :template-vars new
+                   :body (walk-nodes ((body-of template) :copy-tree t :node-var node)
+                           (if (typep node 'template-variable)
+                               (nth (position node old) new)
+                               node)))))
 
 (defmethod find-template-variable (name (template template) &key test)
   (find name (template-vars-of template) :key #'name-of :test test))
@@ -53,11 +59,29 @@
                    "Template variable ~a is not bound. Template: ~%~A"
                    v
                    template)) 
-  (walk-tree ((body-of template) :node-var node :copy-tree t)
-    (if (typep node 'template-variable)
-        (instantiate-template-variable node)
-        node)))
+  (let ((body (walk-subtree ((body-of template) :copy-tree t :subtree-var subtree)
+                (let ((first (first subtree)))
+                  (if (member first *special-forms*)
+                      (eval subtree)
+                      subtree)))))
+    (walk-nodes (body :copy-tree t :node-var node)
+      (if (typep node 'template-variable)
+          (instantiate-template-variable node)
+          node))))
 
+;;;; special form
+(defmacro static-eval (form)
+  form)
+
+(defmacro static-if (test then &optional else)
+  `(if ,test ,then ,else))
+
+(defmacro static-cond (&rest clauses)
+  `(cond ,@clauses))
+
+(defmacro static-case (keyform &body cases)
+  `(case ,keyform
+     ,@cases))
 
 ;;;; macros
 (defmacro with-deftemplate-environment ((name-and-default-classes template-variables template-body) &body body)
@@ -85,7 +109,7 @@
                 (var-names (mapcar (lambda (var-form) (getf (rest var-form) :name)) var-forms))
                 (vars (mapcar (lambda (var-form) (apply #'make-instance var-form)) var-forms))
                 ;; replace symbol with template-variable object
-                (body (walk-tree (,template-body :copy-tree t :node-var node)
+                (body (walk-nodes (,template-body :copy-tree t :node-var node)
                         (if (member node var-names)
                             (find node vars :key #'name-of)
                             node))))
