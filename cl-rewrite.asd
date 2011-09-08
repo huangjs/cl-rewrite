@@ -10,7 +10,8 @@
   :components
   ((:module src
     :components ((:file "package")
-                 (:file "utils" :depends-on ("package"))
+                 (:file "meta" :depends-on ("package"))
+                 (:file "utils" :depends-on ("meta"))
                  (:file "template-variable" :depends-on ("utils"))
                  (:file "template" :depends-on ("template-variable"))
                  (:file "generics" :depends-on ("template"))

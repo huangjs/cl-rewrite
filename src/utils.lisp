@@ -11,14 +11,14 @@
         collect thing))
 
 (defun variable-type-from-env (var env)
-  nil
-  #+allegro (second (find 'cl:type (nth-value 2 (sys:variable-information var env)) :key #'first))
-  #+sbcl (cdr (assoc 'cl:type (nth-value 2 (sb-cltl2:variable-information var env)))))
+  (with-not-implemented-error
+    #+allegro (second (find 'cl:type (nth-value 2 (sys:variable-information var env)) :key #'first))
+    #+sbcl (cdr (assoc 'cl:type (nth-value 2 (sb-cltl2:variable-information var env))))))
 
 (defun function-inline-p-from-env (name env)
-  nil
-  ;; TODO: allegro
-  #+sbcl (eq 'cl:inline (cdr (assoc 'cl:inline (nth-value 2 (sb-cltl2:function-information name env))))))
+  (with-not-implemented-error
+    #+allegro (eq 'cl:inline (second (assoc 'cl:inline (nth-value 2 (sys:function-information name env t)))))
+    #+sbcl (eq 'cl:inline (cdr (assoc 'cl:inline (nth-value 2 (sb-cltl2:function-information name env)))))))
 
 (defmacro local-variable-type (var &environment env)
   (variable-type-from-env var env))
