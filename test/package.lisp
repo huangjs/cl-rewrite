@@ -1,0 +1,5 @@
+(in-package :cl-user)
+
+(defpackage :cl-rewrite.test
+  (:use :cl :alexandria :stefil :cl-rewrite))
+

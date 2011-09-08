@@ -9,12 +9,12 @@
   ;; add new files to this list:
   :components
   ((:module src
-            :components ((:file "packages")
-                         (:file "utils" :depends-on ("packages"))
-                         (:file "template-variable" :depends-on ("utils"))
-                         (:file "template" :depends-on ("template-variable"))
-                         (:file "generics" :depends-on ("template"))
-                         )))
+    :components ((:file "package")
+                 (:file "utils" :depends-on ("package"))
+                 (:file "template-variable" :depends-on ("utils"))
+                 (:file "template" :depends-on ("template-variable"))
+                 (:file "generics" :depends-on ("template"))
+                 )))
   :depends-on (:alexandria
                ;; :parse-declarations-1.0
                ))
