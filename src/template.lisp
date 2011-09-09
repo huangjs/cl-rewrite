@@ -1,8 +1,5 @@
 (in-package :cl-rewrite)
 
-(defvar *templates* (make-hash-table))
-(defvar *special-forms* '(static-eval static-if static-cond static-case))
-
 (defun find-template (name)
   (gethash name *templates*))
 
@@ -37,14 +34,14 @@
 
 (defmethod copy-template ((template template))
   (let* ((old (template-vars-of template))
-         (new (mapcar #'copy-template-variable old)))
-    (make-instance 'template
-                   :name (name-of template)
-                   :template-vars new
-                   :body (walk-nodes ((body-of template) :copy-tree t :node-var node)
-                           (if (typep node 'template-variable)
-                               (nth (position node old) new)
-                               node)))))
+         (new (mapcar #'copy-template-variable old))
+         (template (copy-instance template :template-vars new)))
+    (setf (body-of template)
+          (walk-nodes ((body-of template) :copy-tree t :node-var node)
+            (if (typep node 'template-variable)
+                (nth (position node old) new)
+                node)))
+    template))
 
 (defmethod find-template-variable (name (template template) &key test)
   (find name (template-vars-of template) :key #'name-of :test test))
@@ -82,6 +79,13 @@
 (defmacro static-case (keyform &body cases)
   `(case ,keyform
      ,@cases))
+
+(defmacro static-inline (fspec)
+  (typecase fspec
+    (list (case (first fspec)
+            ((function quote) (second fspec))
+            (otherwise fspec)))
+    (otherwise fspec)))
 
 ;;;; macros
 (defmacro with-deftemplate-environment ((name-and-default-classes template-variables template-body) &body body)

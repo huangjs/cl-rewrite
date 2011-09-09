@@ -25,9 +25,7 @@
 (defgeneric instantiate-template-variable (variable))
 
 (defmethod copy-template-variable ((variable template-variable))
-  (make-instance 'template-variable
-                 :name (name-of variable)
-                 :binding (binding-of variable)))
+  (copy-instance variable))
 
 (defmethod template-variable-matches-p ((variable template-variable) value)
   (declare (ignorable variable value))
@@ -60,10 +58,4 @@
                 (binding-of variable)
                 (concept-of variable)))
       (call-next-method)))
-
-(defmethod copy-template-variable ((variable template-variable-with-concept))
-  (make-instance 'template-variable-with-concept
-                 :name (name-of variable)
-                 :binding (binding-of variable)
-                 :concept (concept-of variable)))
 

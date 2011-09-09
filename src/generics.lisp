@@ -1,10 +1,5 @@
 (in-package :cl-rewrite)
 
-(defvar *generic-functions* (make-hash-table))
-(defvar *instantiated-functions* (make-hash-table))
-
-(declaim (type hash-table *generic-functions* *instantiated-functions*))
-
 (defun find-generic-function (name)
   (gethash name *generic-functions*))
 
@@ -131,8 +126,12 @@
          (setf (find-generic-function name) template)
          ;; re-instantiate if function redefined
          (loop for types in (gethash name *instantiated-functions*)
-               do (instantiate-function-by-types template types))
-         ;;
+               do (handler-case
+                      (instantiate-function-by-types template types)
+                    (error (c)
+                      (warn "Having problems re-instantiating generic function ~a with input types ~a~%Probably due to changes in function lambda-list.~%Error message:~%~A"
+                            name types c)))) 
+         ;; define macro that expands to function call
          (with-unique-names (env whole)
            `(defmacro ,name ,(append (list '&whole whole) lambda-list (list '&environment env))
               ,@docstring
@@ -144,20 +143,21 @@
                        (aux (mapcar #'first aux))
                        (rest (when rest (list rest))))
                    `(declare (ignorable ,@(append required optional rest keyword aux)))))
+              ;; TODO: remove
               (declare (optimize (speed 1) safety debug))
               ;;
               (let* ((name ',name)
                      (template (find-generic-function name))
-                     (typed-vars ',typed-vars)
-                     (typed-var-types
+                     (typed-vars ',typed-vars)          ; typed var in argument
+                     (typed-var-types                   ; types declared in environment
                        (loop for var in typed-vars
                              for type = (variable-type-from-env var ,env)
                              unless type
                              do (simple-style-warning "Cannot get type information of var ~a" var)
                              collect (or type t)))
-                     (parameterized-types ',types)
-                     (template-vars ',template-vars)
-                     (template-var-types
+                     (parameterized-types ',types)      ; parameter symbols
+                     (template-vars ',template-vars)    ; template vars (ordered but non duplicated)
+                     (template-var-types                ; types for template vars (ordered but non duplicated)
                        (let (collected-template-vars collected-types)
                          (assert (= (length typed-var-types)
                                     (length typed-vars)
@@ -174,7 +174,8 @@
                          (assert (equal (reverse collected-template-vars) template-vars))
                          (nreverse collected-types)))
                      (function-name (generate-function-name name template-var-types))
-                     (args (rest ,whole))) 
+                     (args (rest ,whole)))
+                ;; if not instantiated, create new function
                 (let ((instantiated-types (gethash name *instantiated-functions*)))
                   (unless (and instantiated-types
                                (member template-var-types instantiated-types :test 'equalp)) 

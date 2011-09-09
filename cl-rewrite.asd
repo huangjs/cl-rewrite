@@ -11,7 +11,8 @@
   ((:module src
     :components ((:file "package")
                  (:file "meta" :depends-on ("package"))
-                 (:file "utils" :depends-on ("meta"))
+                 (:file "variables" :depends-on ("meta"))
+                 (:file "utils" :depends-on ("variables"))
                  (:file "template-variable" :depends-on ("utils"))
                  (:file "template" :depends-on ("template-variable"))
                  (:file "generics" :depends-on ("template"))
