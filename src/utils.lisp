@@ -87,7 +87,8 @@ If CLASS is of type STANDARD-CLASS, all slots \(as returned by
 CLASS-SLOTS) are considered.")
   (:method ((class standard-class))
     (with-not-implemented-error
-     #+sbcl (sb-pcl:class-slots class))))
+        #+sbcl (sb-pcl:class-slots class)
+        #+allegro (mop:class-slots class))))
 
 (defgeneric make-uninitialized-instance (class)
   (:documentation "Allocates a fresh uninitialized instance of the
@@ -95,8 +96,7 @@ given class CLASS.
 
 If CLASS is of type CLASS, ALLOCATE-INSTANCE is used.")
   (:method ((class class))
-    (with-not-implemented-error
-      #+sbcl (allocate-instance class))))
+    (allocate-instance class)))
 
 (defgeneric copy-instance (object &rest initargs &key &allow-other-keys)
   (:documentation "Makes and returns a \(shallow) copy of OBJECT.
@@ -108,14 +108,15 @@ same slot values and slot-unbound status as OBJECT.
 
 REINITIALIZE-INSTANCE is called to update the copy with INITARGS.")
   (:method ((object standard-object) &rest initargs &key &allow-other-keys)
-    (with-not-implemented-error
-      #+sbcl
-      (let* ((class (class-of object))
-             (copy (make-uninitialized-instance class)))
-        (dolist (slot (copy-class-slots class))
-          (let ((slot-name (sb-pcl:slot-definition-name slot)))
-            (when (slot-boundp object slot-name)
-              (setf (slot-value copy slot-name)
-                    (slot-value object slot-name)))))
-        (apply #'reinitialize-instance copy initargs)))))
+    (let* ((class (class-of object))
+           (copy (make-uninitialized-instance class)))
+      (dolist (slot (copy-class-slots class))
+        (let ((slot-name
+                (with-not-implemented-error
+                    #+sbcl (sb-pcl:slot-definition-name slot)
+                    #+allegro (mop:slot-definition-name slot))))
+          (when (slot-boundp object slot-name)
+            (setf (slot-value copy slot-name)
+                  (slot-value object slot-name)))))
+      (apply #'reinitialize-instance copy initargs))))
 

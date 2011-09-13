@@ -1,5 +1,9 @@
 ;; -*- Mode: common-lisp; Package: cl-user -*-
 
+#+sbcl
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (require :sb-cltl2))
+
 (asdf:defsystem :cl-rewrite
   :description "Term rewriting library for Common Lisp"
   :author "Jianshi Huang"
