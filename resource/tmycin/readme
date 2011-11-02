@@ -1,0 +1,25 @@
+The basic TMYCIN files are:
+
+readme           This file
+tmycin.lsp       Code
+arl.lsp          Abbreviated Rule Language option
+tmdoc.tex        Documentation, LaTex source
+tmdoc.doc        Documentation, lineprinter style
+rocks.lsp        Very small demo expert system to identify rocks
+rocks.tst        Test run of rocks.lsp
+snakes.lsp       Demo expert system to identify snakes
+snakes.tst       Test run of snakes.lsp
+gcaux.lsp        Lisp functions for use with Gold Hill Common Lisp
+
+Do not load both snakes and rocks into the same execution of TMYCIN,
+since they share parameter names and cause errors if loaded together.
+
+TMYCIN is written in Common Lisp.  It should run in any of the large
+commercial Common Lisp implementations.  It will run in AKCL (Austin
+Kyoto Common Lisp).  AKCL and Xakcl (AKCL with an interface to X
+windows) are free, run on many Unix machines, and can be obtained
+by FTP from rascal.ics.utexas.edu .
+
+TMYCIN will run using the student version of Gold Hill Common Lisp
+with the addition of the file gcaux.lsp ; it is also necessary to
+edit the TMYCIN file as described in gcaux.lsp .
