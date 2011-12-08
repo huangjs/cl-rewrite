@@ -4,13 +4,17 @@
 
 (defpackage :cl-rewrite
   (:use :cl :alexandria)
-  (:export #:defun/t
+  (:export #:match
+           #:transf-1
+           #:transf
+           #:transf-all
+           #:defun/t
            #:defun/t-inline
            #:deftemplate
            #:static-eval
            #:static-if
            #:static-cond
            #:static-case
-           #:static-inline
+           #:static-inline 
            ))
 
