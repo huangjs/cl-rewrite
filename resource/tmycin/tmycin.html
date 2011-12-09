@@ -1,0 +1,543 @@
+<HTML>
+<!--  tmycin.html          G. Novak           23 Nov 98    -->
+<!--    -->
+<HEAD>
+  <TITLE>TMYCIN Expert System Tool</TITLE>
+</HEAD>
+<BODY>
+<P ALIGN=CENTER><H1>TMYCIN Expert System Tool</H1></P>
+
+<P ALIGN=CENTER>
+Gordon S. Novak Jr.<BR>
+Department of Computer Sciences<BR>
+University of Texas at Austin<BR>
+Austin, TX  78712<BR>
+</P>
+
+<H2>Introduction</H2>
+
+TMYCIN (``Tiny EMYCIN'') is a simple expert system tool patterned after
+the EMYCIN tool developed at Stanford [1, 2].
+TMYCIN does not attempt to provide all of the features of EMYCIN; it is
+intended to provide some of the most commonly used features in a package
+that is small and simple.  The internal implementation of TMYCIN has been
+written from scratch and is therefore different from that of EMYCIN.
+
+<H2>Data</H2>
+
+Data about a particular case is stored in a record structure called a
+<I>context</I>; the current context is referenced in rules by the global
+variable <TT>cntxt</TT>.  TMYCIN allows only a single level of context.
+
+<H3>Context Description</H3>
+
+The data in a context are described in a <I>context description</I> or
+<I>class</I>, which is defined to the system by a call to <TT>defcontext</TT>:
+<PRE>
+   (defcontext <I>context-name</I>
+               <I>parameters</I>
+               <I>initial-data</I>
+               <I>goals</I> )
+</PRE>
+where <I>context-name</I> is the name of the context (usually the name of
+the kind of object being identified or diagnosed, e.g., <TT>rock</TT> or
+<TT>patient</TT>),
+<I>parameters</I> is a list of parameter descriptions, <I>initial-data</I>
+is a list of the parameters whose values are to be asked for
+at the start of every consultation, and <I>goals</I> is a list of parameters
+whose values are sought as the result of the consultation.  An example of a
+call to <TT>defcontext</TT> is shown below.
+<PRE>
+(defcontext 'rock                           ; Context Name
+            '((color (brown black white))   ; Parameters
+              (hardness posnumb)
+              (environment (igneous metamorphic sedimentary)
+                 ("What is the type of geologic environment"
+                  "in which the specimen was found?"))
+              (identity atom)
+              (pretty nil))                  ; Yes/No parm
+            '(color)                         ; Initial data
+            '(identity))                     ; Goals
+</PRE>
+
+Each <I>parameter</I> description is a list of three items:
+<PRE>
+   (<I>parameter-name</I> <I>type</I> <I>prompt</I>)
+</PRE>
+<OL>
+<LI> The <I>parameter-name</I> is always a single symbol, e.g. <TT>color</TT>.
+
+<LI> The <I>type</I> of the parameter may be:
+<OL>
+<LI> A type as used in EMYCIN, e.g. <TT>posnumb</TT> (positive number).  This is
+not checked, but is shown to the user when prompting for user input.
+
+<LI> A list of possible values, e.g. <TT>(brown black white)</TT>.  This is
+not checked, but is shown to the user when prompting for user input.
+
+<LI> <TT>nil</TT>, which indicates a Yes/No parameter.  This value is examined by
+the input routine, which will convert an input of <TT>no</TT> to <TT>(yes -1.0)</TT>
+if the type is <TT>nil</TT>.  A type of <TT>nil</TT> will also affect the way in
+which the parameter is described when prompting for input.
+</OL>
+
+<LI> The <I>prompt</I> (optional) may be either a string or a list of strings.
+The prompt string(s) are shown to the user when prompting for input, or in
+response to a ``?'' input; the purpose is to explain in more detail the
+input that is being asked for (including, for example, units of measurement).
+</OL>
+
+<H3>Internal Data Storage</H3>
+
+A context in TMYCIN is implemented as a Lisp symbol (a <TT>gensym</TT> symbol formed
+from the context name, e.g. <TT>rock37</TT>) with the data values
+stored on its property list.  A pointer to the context description is stored
+under the property name <TT>isa</TT>.
+<P>
+Each parameter value is stored as a list of values and certainty factors, e.g.
+<PRE>
+   color ((red 0.4)(white 0.3)(blue 0.1))
+</PRE>
+where <TT>color</TT> is the parameter/property name and the values are stored as
+a list under that property.  The values are sorted by certainty factor (CF),
+with the value having the highest CF first.
+
+<H2>Rules</H2>
+<H3>Rule Format</H3>
+Rules are defined to the system using the function <TT>defrules</TT>, which takes
+one or more unquoted rules as input.  Each rule has the format:
+<PRE>
+   (<I>rulename</I> <I>premises</I>
+             <I>conclusion</I>)
+</PRE>
+Usually the <I>premises</I> is a conjunction of conditions grouped within
+a call to the function <TT>$and</TT> , and the <I>conclusion</I> is a call to
+the function <TT>conclude</TT> (the function <TT>do-all</TT> can be used
+for multiple conclusions or for actions in addition to calling
+<TT>conclude</TT>).  An example of a rule definition is shown below.
+<PRE>
+   (defrules 
+ 
+      (rule101 ($and (same cntxt color black)
+                     (notsame cntxt pretty yes)
+                     ($or (between* (val1 cntxt hardness) 3 5)
+                          (same cntxt environment sedimentary)))
+               (conclude cntxt identity coal tally 400))
+   )
+</PRE>
+<H3>$AND and $OR</H3>
+<P>
+The condition part of a rule is usually formed from tests of parameter values,
+combined by the functions <TT>$and</TT> and <TT>$or</TT>.  <TT>$and</TT> evaluates each
+of its clauses in order.  If any clause returns <TT>nil</TT> or returns a CF
+(<I>certainty factor</I>) value less than the .2 threshold, <TT>$and</TT> immediately
+returns <TT>nil</TT> (without evaluating any other clauses); otherwise, <TT>$and</TT>
+returns the minimum CF that any clause returned.  <TT>$or</TT> is ``true'' if any
+of its clauses is ``true''; <TT>$or</TT> returns the maximum CF returned by any of
+its clauses.  <TT>$and</TT> and <TT>$or</TT> may be nested.
+<P>
+Before trying all of its clauses, <TT>$and</TT> does a ``prescan'' of the clauses
+to see if any of them is already known to be false (CF of <TT>nil</TT> or below
+the .2 threshold); if so, <TT>$and</TT> returns <TT>nil</TT> without evaluating any
+of the other clauses.
+
+<H3>Testing Data Values</H3>
+
+Several functions are provided to test data values within rules.  These differ
+in terms of the certainty factor required to make the condition ``true'' and
+in terms of the CF value returned.  Each of these functions uses the global
+variable <TT>cntxt</TT>, which is a pointer to the current context.
+<UL>
+<LI> <TT>(same cntxt <i>parameter</i> <i>value</i>)</TT> tests whether
+the specified parameter
+has the specified value with CF &gt .2 ; the value returned is the CF
+of the parameter.  A Yes/No parameter is tested for the value ``Yes'' with
+<TT>(same cntxt <i>parameter</i> yes)</TT>.
+
+<LI> <TT>(notsame cntxt <i>parameter</i> <i>value</i>)</TT> tests whether
+the specified parameter does not have the specified value at all, or has
+it with CF &lt= .2 ; if so, the value returned is 1.0 .  Note that
+<TT>notsame</TT> returns ``true'' for a parameter whose value is ``unknown''.
+
+<LI> <TT>(thoughtnot cntxt <i>parameter</i> <i>value</i>)</TT> tests
+whether the specified parameter has the specified value with CF &lt -.2 ;
+if so, the value returned is the negative of the CF value.
+<TT>thoughtnot</TT> is the negative counterpart of <TT>same</TT>.
+A Yes/No parameter is tested for the value ``No'' with
+<TT>(thoughtnot cntxt <i>parameter</i> yes)</TT>.
+<TT>thoughtnot</TT> requires a negative
+value for the specific parameter; it will not respond to an ``unknown'' value.
+
+<LI> <TT>(known cntxt <i>parameter</i>)</TT> tests whether the specified 
+parameter has a value with CF > .2 (or, for yes/no parameters,
+CF &lt -.2); if so, the
+value returned is always 1.0, which means that the CF of data tested using
+<TT>known</TT> will not affect the CF returned by <TT>$and</TT>.
+
+<LI> <TT>(notknown cntxt <i>parameter</i>)</TT> tests whether the specified
+parameter has no value with CF &gt .2 (or, for yes/no parameters,
+CF &lt -.2); if so, the
+value returned is 1.0 .  This predicate may be used to test for data that the
+user specifies as ``unknown''.
+</UL>
+
+<H3>Numeric Tests</H3>
+
+In order to perform numeric tests or other calculations with parameter values,
+it is first necessary to get the numeric values of the parameters; this is done
+using the function <TT>val1</TT>.  <TT>val1</TT> gets the value of a parameter which
+has the highest CF of all the possible values stored for that parameter.
+The format is:
+<PRE>
+   (val1 cntxt <i>parameter</i>)
+</PRE>
+If the parameter has a numeric value, <TT>val1</TT> will return that value, which
+can then be used in numeric calculations or in the numeric comparison functions
+described below.
+<P>
+The numeric comparison functions provided with TMYCIN are different from the
+plain Lisp comparison functions in two respects: they are able to tolerate
+non-numeric arguments (in which case they return <TT>nil</TT>), and they return
+a value of 1.0 if the test is ``true'' so that they can be used within
+<TT>$and</TT>.  The comparison functions are:
+<PRE>
+   (greaterp* <I>numexp1</I> <I>numexp2</I>)
+   (greateq*  <I>numexp1</I> <I>numexp2</I>)
+   (lessp*    <I>numexp1</I> <I>numexp2</I>)
+   (lesseq*   <I>numexp1</I> <I>numexp2</I>)
+   (between*  <I>numexp1</I> <I>numexp2</I> <I>numexp3</I>)
+</PRE>
+<TT>between*</TT> tests whether
+<I>numexp2</I> &lt= <I>numexp1</I> &lt <I>numexp3</I>.
+
+<H2>Input</H2>
+
+When TMYCIN asks for a parameter value during a consultation, there are several
+kinds of response the user can give:
+<OL>
+<LI> The user can simply enter a single data value, e.g. <TT>blue</TT>.  The resulting
+stored value will be a list of that one value with a certainty of 1.0, i.e.,
+<TT>((blue 1.0))</TT>.  For a Yes/No parameter, the user may enter <TT>yes</TT>, <TT>y</TT>,
+<TT>no</TT>, or <TT>n</TT>; <TT>no</TT> and <TT>n</TT> are converted to <TT>((yes -1.0))</TT> .
+
+<LI> The user can enter a list of a single value and a certainty factor, e.g.,
+<TT>(yes 0.6)</TT>.  The resulting stored value will be a list of that one value,
+i.e., <TT>((yes 0.6))</TT>.
+
+<LI> The user can enter a list of multiple values and certainty factors, e.g.,
+<TT>((red 0.5)(orange 0.5))</TT>.  TMYCIN does not enforce any kind of
+consistency among certainty factors.  Therefore, a parameter that is thought
+of as multivalued may have several parameters with high certainty, e.g.,
+<TT>((red 1.0) (white 1.0) (blue 1.0))</TT>
+
+<LI> The user can enter <TT>unk</TT> or <TT>unknown</TT> if the value of the parameter
+is unknown.  This results in a ``dummy'' data set, <TT>((unknown 0.0))</TT> .
+In general, unknown values will not be considered as ``true'' by the
+predicates that test data values (with the exception of <TT>notsame</TT> and
+<TT>notknown</TT>), so that most rules involving unknown data will not fire.
+
+<LI> The user can enter <TT>?</TT>.  The system will respond by printing the
+prompt string for the parameter (if there is one) and the type specified
+for the parameter.  Then the user will be asked for the parameter value again.
+Note that with <TT>*printdes*</TT> set to <TT>t</TT>, the default value, this
+information is printed automatically; the <TT>?</TT> input is mainly useful
+when <TT>*printdes*</TT> is set to <TT>nil</TT>.
+
+<LI> The user can enter <TT>why</TT>.  The system will respond by printing the
+rule that is currently being examined, then ask for the parameter value again.
+</OL>
+
+<H3>Input Options</H3>
+
+The global variable <TT>*printdes*</TT> determines whether the data type and prompt
+information will be shown to the user automatically when asking for input.
+The default value of <TT>*printdes*</TT> is <TT>t</TT>.
+<P>
+If desired, the user may define a function to obtain input, either from the user
+or from another source (e.g., a database or special I/O device).  If the parameter
+name has the property <TT>askfn</TT> defined, the function specified for the <TT>askfn</TT>
+property will be called to obtain the value; its parameters are the data context and
+the parameter name.  The <TT>askfn</TT> should return a list of
+ <TT>(<i>value</i> <i>cf</i>)</TT>
+pairs, as described above.  For example, if an <TT>askfn</TT> reads a <TT>voltage</TT> of 4.6
+volts from an A/D converter, it should return <TT>((4.6 1.0))</TT> .
+<PRE>
+   ; Specify the `ask' function for voltage
+   (setf (get 'voltage 'askfn) #'readvoltage)
+
+   ; Simulate reading of voltage: 4 volts + 0-1 volts noise
+   (defun readvoltage (cntxt parm)
+     (list (list (+ 4.0 (random 1.0)) 1.0)) )
+</PRE>
+<P>
+In some cases, it may be desirable to ask the user for a value before trying to
+infer a parameter value using rules.  For example, the <TT>temperature</TT> of a patient
+will usually be known.  If the <TT>askfirst</TT> property is defined with a non-<TT>nil</TT>
+value for a parameter name, then the user will be asked for a value before rules
+to infer the parameter are tried.
+<PRE>
+   (setf (get 'temperature 'askfirst) t)
+</PRE>
+
+<H2>Escaping to Lisp</H2>
+
+An important feature of an expert system tool is the ability to escape from it
+into the underlying programming language to perform computations that are not
+easily supported by the tool.  TMYCIN provides several places at which an expert
+system application can escape into Lisp.
+
+<H3>Special Input Functions</H3>
+
+As mentioned above, it is possible to put a function name on the property list
+of a parameter name as the value of the <TT>askfn</TT> property.  This will cause that
+function to be called for input of that parameter rather than asking the user for
+the value.  This allows some or all of the input data used by the expert system to
+be gotten from other sources, such as databases, data files, or special input
+devices.  If desired, the parameters could also be specified as <TT>askfirst</TT>
+parameters so that data will be obtained for them before the consultation begins.
+
+<H3>Functions in Rule Premises</H3>
+
+A call to an arbitrary function can be included in the premise of a rule.
+Such a function may use the global variable <TT>cntxt</TT> to refer to the current
+data context.  The function should return a value which is a certainty factor
+(a number from -1.0 to 1.0), or <TT>nil</TT> to indicate failure.  Consult the
+existing predicate functions for examples.  If no value is known for a parameter
+and the global variable <TT>*prescan*</TT> is non-<TT>nil</TT>, the value <TT>1.0</TT>
+should be returned.
+
+<H3>Calculations in Rule Conclusions</H3>
+
+If the <TT><value></TT> part of a <TT>conclude</TT> call is a single atom (symbol), it is
+treated as if it were quoted:
+<PRE>
+   (conclude cntxt identity coal tally 400)
+</PRE>
+In this case, <TT>coal</TT> is treated as a quoted value.  However, if the
+<I>value</I> is a list, it is evaluated; this allows calculations to be
+performed in the conclusion part of a rule.  The function <TT>val1</TT>
+can be used to get parameter values.
+<PRE>
+   (rule107 ($and (same cntxt shape circle)
+                  (known cntxt radius))
+            (conclude cntxt area 
+                      (* 3.14159
+                         (expt (val1 cntxt radius) 2))
+                      tally 1000))
+</PRE>
+
+<H3>Calculations in Rule Certainty Factors</H3>
+
+In some cases, it is desirable to use data values in calculating certainty factors.
+For example, suppose that a physician expert specifies that lung cancer is ruled
+out for patients less than 20 years old, and is to be linearly weighted negatively
+for patients from 20 to 30 years old.
+<PRE>
+   (rule112 (lesseq* (val1 cntxt age) 30)
+            (conclude cntxt diagnosis lung-cancer
+                      tally (if (< (val1 cntxt age) 20)
+                                -1000
+                                (* (- 30 (val1 cntxt age))
+                                   -100))) )
+</PRE>
+
+<H3>Calling Functions From Conclusion</H3>
+
+It is sometimes useful to call user functions in the conclusion part of a rule.
+The function <TT>do-all</TT> is used to perform multiple actions in the conclusion
+part of a rule.  By putting both a <TT>conclude</TT> call and a call to a user
+function within the <TT>do-all</TT>, the user function can be called when the rule
+fires.  At least one <TT>conclude</TT> call is needed in order to cause the rule
+to be considered during backchaining; the parameter that is <TT>conclude</TT>d
+should either be a goal parameter or one that will be traced in seeking the
+value of a goal parameter.
+<PRE>
+   (rule109 ($and (same cntxt smoke yes)
+                  (same cntxt heat yes))
+            (do-all (conclude cntxt problem fire tally 800)
+                    (sound-fire-alarm-fn)))
+</PRE>
+
+<H2>Notes on Using TMYCIN</H2>
+
+<H3>Deleting Rules</H3>
+
+In most cases, when a rule is edited and defined again using <TT>defrules</TT>,
+no further action is necessary.  However, if the rule conclusion is changed
+so that it no longer concludes the same parameter, or if the rule is to be
+deleted entirely, special action is necessary.  The reason for this is that
+rules are indexed so that each parameter has a list of the rules that conclude
+it; if a rule is to be deleted, it must be removed from this list.
+<P>
+<TT>(delrule <i>rulename</i>)</TT> 
+will delete the single rule <I>rulename</I>.
+<P>
+<TT>(clear-rules)</TT> will delete all rules.
+<P>
+These functions were written by Hiow-Tong Jason See.
+
+<H3>Self-Referencing Rules</H3>
+
+Sometimes rules are written that reference the same parameter in both the
+premise and conclusion; these might be used, for example, to increase the
+certainty of a parameter that is already concluded if additional factors
+are present.  In order to run such rules correctly, all other rules
+that conclude the parameter must run first.  To make this happen, all
+self-referencing rules should be put at the <I>end</I> of the file of rules;
+this will make them run last in the ordering used by TMYCIN.
+<PRE>
+   (rule119 ($and (same cntxt identity rattlesnake)
+                  (same cntxt bit-someone yes)
+                  (same cntxt victim-died yes))
+            (conclude cntxt identity rattlesnake tally 800))
+</PRE>
+
+<H2>Useful Functions</H2>
+
+<H3>Starting the Consultation</H3>
+
+<TT>doconsult</TT> is used to start a new consultation; its optional parameter is a
+context class name.
+<PRE>
+   (doconsult)
+
+   (doconsult 'rock)
+</PRE>
+
+<H3>Why Questions</H3>
+
+Two functions, <TT>why</TT> and <TT>whynot</TT>, are provided to allow the user to
+ask about the system's reasoning at the end of a consultation.
+<TT>why</TT> will print out the rule(s) that concluded values for a parameter.
+<TT>whynot</TT> asks why a particular conclusion was <I>not</I> reached.  It prints
+rule(s) that might have reached the specified conclusion along with the
+failing condition that prevented each rule from firing.
+<P>
+Both functions allow omission of parameters for convenience.  The full set of
+parameters is:
+<PRE>
+   (why    <I>context</I> <I>parameter</I> <I>value</I>)
+
+   (whynot <I>context</I> <I>parameter</I> <I>value</I>)
+</PRE>
+It is permissible to omit the first parameter, the first two, or all three
+(in the case of the <TT>why</TT> function).
+The <I>context</I> defaults to the context for the most recently run
+consultation.  The <I>parameter</I> defaults to the first parameter in the
+<TT>goals</TT> list.  The <I>value</I> defaults to the most strongly concluded
+value for the <I>parameter</I>.  Example calls are:
+<PRE>
+   (why)
+   (why obsidian)
+   (why identity obsidian)
+   (why rock37 identity obsidian)
+
+   (whynot coal)
+   (whynot identity coal)
+   (whynot rock37 identity coal)
+</PRE>
+
+<H3>Translation of Rules into English</H3>
+
+The function <TT>englrule</TT> translates a previously defined rule into an
+English-like format.  Its argument is a quoted rule name:
+<PRE>
+   (englrule 'rule101)
+</PRE>
+produces:
+<PRE>
+If:
+      1) the COLOR of the ROCK is BLACK, and
+      2) PRETTY is not true of the ROCK, and
+      3)   1) the HARDNESS of the ROCK is 4, or
+           2) the ENVIRONMENT of the ROCK is SEDIMENTARY
+then:
+      there is weakly suggestive evidence (0.4)
+      that the IDENTITY of the ROCK is COAL
+</PRE>
+
+<H3>Analysis of the Knowledge Base</H3>
+
+<TT>showrule</TT> will pretty-print a rule in internal (Lisp) form.
+<PRE>
+   (showrule 'rule101)
+</PRE>
+<P>
+<TT>listparms</TT>
+will print out the parameters defined for the current context
+class (gotten from the current value of <TT>cntxtname</TT> , which will be
+set to the context name used in the last call to <TT>defcontext</TT>).
+<P>
+<TT>listrules</TT> will list all the rules, in both English and internal forms.
+<P>
+<TT>analyze-kb</TT> will analyze the knowledge base, listing the rules that can
+conclude each parameter.
+<P>
+<TT>listkb</TT> will print a complete listing of the knowledge base, i.e.,
+it does <TT>analyze-kb</TT>, <TT>listparms</TT>, and <TT>listrules</TT>.
+<P>
+These functions were written by Hiow-Tong Jason See.
+
+<H3>Other Useful Functions</H3>
+
+<TT>showprops</TT> will pretty-print the property list of a symbol, which
+is useful for looking at the data values stored for a particular consultation:
+<PRE>
+   (showprops 'rock37)
+</PRE>
+
+<H2>How TMYCIN Works</H2>
+
+The basic operation of TMYCIN is very simple.  The function <TT>doconsult</TT>,
+which is the top-level function that performs a consultation, first makes
+a new symbol from the context name (e.g., <TT>rock37</TT>) to be the context
+for the consultation.  Next, it asks the user for values of the parameters
+that are specified as initial-data parameters in the context definition.
+Then it calls <TT>bc-goal</TT> to find values for each of the goal parameters.
+Finally, it prints the results.
+<P>
+The basic function to find values for a parameter (called <I>tracing</I> the
+parameter) is <TT>bc-goal</TT>, so named because it <I>backchains</I> on rules to
+try to find values for its goal parameter.  <TT>bc-goal</TT> finds the set of
+rules that could conclude some value for the desired parameter and runs
+each of them; if there are no rules to conclude the value of a parameter,
+it asks the user for the value.  The rules that can conclude each parameter
+are stored on the property list of the parameter under the property
+<TT>rules</TT>; this cross-indexing is done by <TT>defrules</TT> when the rules
+are defined.  For example, <TT>rule101</TT>, which concludes that the identity
+of a rock is coal, is stored as one of the rules under the property
+<TT>rules</TT> of the symbol <TT>identity</TT>.  Note that while <TT>bc-goal</TT> will
+often be called by a predicate seeking a particular value for a parameter,
+e.g. <TT>(same cntxt color white)</TT>, it will try to run all rules that
+conclude <I>any</I> value for the parameter (in this case, <TT>color</TT>) before
+it quits.
+<P>
+Running a rule is done in two stages.  First, the antecedent (left-hand side
+or ``if'' part) of the rule is evaluated; if it has a ``true'' value, i.e., a CF
+greater than 0.2, the consequent (``then'' part) of the rule is executed.
+Evaluating the antecedent will typically involve tests of
+parameter values using predicates such as <TT>same</TT>; these predicates call
+the function <TT>parmget</TT> to get the value(s) of the parameter.  <TT>parmget</TT>
+returns an existing value if there is one; otherwise, it calls <TT>bc-goal</TT>
+to find the value.  In this way, <TT>bc-goal</TT> does a depth-first search of
+the rule tree, where the root(s) of the tree are goal parameters and the
+terminal nodes of the tree are parameter values provided by the user as
+input.
+
+<H2>References</H2>
+
+<OL>
+<LI> Shortliffe, E.H., <I>Computer Based Medical Consultations: MYCIN</I>,
+American Elsevier, 1976.
+
+<LI> Van Melle, W., Scott, A. C., Bennett, J. S., Peairs, M., "The Emycin
+Manual", Technical Report STAN-CS-81-885, Computer Science Dept.,
+Stanford University, 1981.
+</OL>
+
+<HR>
+<address><a href="http://www.cs.utexas.edu/users/novak/index.html">
+Gordon S. Novak Jr.</a></address>
+
+</BODY>
+</HTML>
