@@ -2,7 +2,7 @@
 
 ; Copyright (c) 1990 by Gordon S. Novak Jr.
 
-(in-package :user)
+;; (in-package :cl-user)
 
 ; Simple Lisp interpreter written in Lisp.
 ; This version allows regular Lisp code to run by falling back on Lisp

@@ -23,8 +23,7 @@
                  (:file "generics" :depends-on ("template"))
                  ;;
                  (:file "match")
-                 (:file "transform")
-                 (:file "infix")
+                 (:file "transform") 
                  (:file "structure-sharing")
                  )))
   :depends-on (:alexandria

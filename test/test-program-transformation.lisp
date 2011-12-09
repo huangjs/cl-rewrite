@@ -21,9 +21,9 @@
   (let ((bindings (match '(- (+ ?x ?y) (+ ?z ?y))
                     '(- (+ (age tom) (age mary))
                       (+ (age bill) (age mary))))))
-    (is (eql 1 (cdr (assoc '?x bindings))))
-    (is (eql 2 (cdr (assoc '?y bindings))))
-    (is (eql 3 (cdr (assoc '?z bindings))))))
+    (is (equal '(age tom) (cdr (assoc '?x bindings))))
+    (is (equal '(age mary) (cdr (assoc '?y bindings))))
+    (is (equal '(age bill) (cdr (assoc '?z bindings))))))
 
 (deftest test-transf-1 ()
   (is (equal '(- (AGE TOM) (AGE BILL))

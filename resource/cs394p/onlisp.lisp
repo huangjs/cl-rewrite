@@ -726,18 +726,18 @@
           (rec fns)))))
 
 (defmacro alrec (rec &optional base)
-  "cltl2 version"
-  (let ((gfn (gensym)))
-    `(lrec #'(lambda (it ,gfn) 
-               (symbol-macrolet ((rec (funcall ,gfn)))
-                 ,rec))
-           ,base)))
-
-(defmacro alrec (rec &optional base)
   "cltl1 version"
   (let ((gfn (gensym)))
     `(lrec #'(lambda (it ,gfn)
                (labels ((rec () (funcall ,gfn)))
+                 ,rec))
+           ,base)))
+
+(defmacro alrec (rec &optional base)
+  "cltl2 version"
+  (let ((gfn (gensym)))
+    `(lrec #'(lambda (it ,gfn) 
+               (symbol-macrolet ((rec (funcall ,gfn)))
                  ,rec))
            ,base)))
 
@@ -1487,8 +1487,8 @@
            ,@body)
          (fail)))))
 
-(defun varsym? (x) 
-  (and (symbolp x) (not (symbol-package x))))
+;; (defun varsym? (x) 
+;;   (and (symbolp x) (not (symbol-package x))))
 
 (defun gen-query (expr &optional binds)
   (case (car expr)

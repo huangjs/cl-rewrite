@@ -10,6 +10,7 @@
   ((:module test
     :components ((:file "package")
                  (:file "basic-tests")
+                 (:file "test-program-transformation")
                  )
     :serial t))
   :depends-on (:cl-rewrite
