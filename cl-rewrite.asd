@@ -12,7 +12,8 @@
   :serial t
   ;; add new files to this list:
   :components
-  ((:module src
+  ((:module src 
+    :serial t
     :components ((:file "package")
                  (:file "meta" :depends-on ("package"))
                  (:file "variables" :depends-on ("meta"))
@@ -20,6 +21,11 @@
                  (:file "template-variable" :depends-on ("utils"))
                  (:file "template" :depends-on ("template-variable"))
                  (:file "generics" :depends-on ("template"))
+                 ;;
+                 (:file "match")
+                 (:file "transform")
+                 (:file "infix")
+                 (:file "structure-sharing")
                  )))
   :depends-on (:alexandria
                ;; :parse-declarations-1.0

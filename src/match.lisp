@@ -24,3 +24,7 @@
 (defun match (pat inp)
   (%match pat inp '((t . t))))
 
+
+;;; TODO:
+;;; - Add segment matching and binding
+

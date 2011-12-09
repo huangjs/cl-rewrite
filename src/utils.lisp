@@ -120,3 +120,16 @@ REINITIALIZE-INSTANCE is called to update the copy with INITARGS.")
                   (slot-value object slot-name)))))
       (apply #'reinitialize-instance copy initargs))))
 
+;;; sublis, with quoting value of bindings
+(defun kwote (x)
+  (if (constantp x)
+      x
+      (list 'quote x)))
+
+(defun sublisq (bindings form)
+  (sublis
+   (mapcar #'(lambda (x)
+               (cons (car x) (kwote (cdr x))))
+           bindings)
+   form))
+

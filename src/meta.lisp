@@ -1,8 +1,9 @@
 (in-package :cl-rewrite)
 
-(define-constant +not-implemented-error-string+
-    "The feature is not yet implemented for this lisp system"
-  :test 'equalp)
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (define-constant +not-implemented-error-string+
+      "The feature is not yet implemented for this lisp system"
+    :test 'equalp))
 
 (defmacro 1st (&rest args)
   (assert (> (length args) 0))
