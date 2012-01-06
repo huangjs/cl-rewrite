@@ -22,9 +22,9 @@
                  (:file "template" :depends-on ("template-variable"))
                  (:file "generics" :depends-on ("template"))
                  ;;
+                 (:file "structure-sharing")
                  (:file "match")
                  (:file "transform") 
-                 (:file "structure-sharing")
                  )))
   :depends-on (:alexandria
                ;; :parse-declarations-1.0
