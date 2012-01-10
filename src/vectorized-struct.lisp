@@ -47,6 +47,7 @@
 ;;;  - .struct-name-slot-name. vectors
 ;;;  - constructor function
 ;;;  - slot accessor functions (inlined)
+;;; reset function := reset index, vectors to initial values
 (defun expander-for-defstruct (name-and-options slot-descriptions)
   (multiple-value-bind (name options)
       (parse-defstruct-options name-and-options)
@@ -57,48 +58,51 @@
                                      slot-definitions))
              (slot-vectors (mapcar (lambda (s) (symbolicate "." name "-" (slot-name s) "."))
                                    slot-definitions)))
-        (with-unique-names (i)
-          `(progn
-             ;;
-             (progn
-               (declaim (type fixnum ,index))
-               (defglobal ,index 0)
-               (setf ,index 0))
-             ;;
-             (progn
-               ,@(loop for sv in slot-vectors
-                       for s in slot-definitions
-                       collect `(declaim (type (simple-array ,(slot-type s) (*)) ,sv))
-                       collect `(defglobal ,sv (make-array 1 :element-type ',(slot-type s)))
-                       collect `(setf ,sv (make-array 1 :element-type ',(slot-type s)))))
-             ;;
-             (declaim (inline ,constructor))
-             (defun ,constructor
-                 (&key ,@(loop for s in slot-definitions
-                               collect (slot-name s)))
-               (declare ,@(loop for s in slot-definitions
-                                collect `(type ,(slot-type s) ,(slot-name s))))
-               (let ((,i ,index))
-                 (declare (array-index ,i))
-                 (when (>= ,i (length ,(first slot-vectors)))
-                   ,@(loop for sv in slot-vectors
-                           for s in slot-definitions
-                           collect `(setf ,sv (replace (make-array (* 2 ,i) :element-type ',(slot-type s)) ,sv))))
-                 (progn
-                   ,@(loop for sv in slot-vectors
-                           for s in slot-definitions
-                           collect `(setf (aref ,sv ,index) (or ,(slot-name s) ,(slot-initform s)))))
+        `(progn
+           ;;
+           (declaim (type fixnum ,index))
+           (defglobal ,index 0)
+           ;;
+           ,@(loop for sv in slot-vectors
+                   for s in slot-definitions
+                   collect `(declaim (type (simple-array ,(slot-type s) (*)) ,sv))
+                   collect `(defglobal ,sv (make-array 1 :element-type ',(slot-type s))))
+           ;;
+           (declaim (inline ,constructor))
+           (defun ,constructor (&key ,@(loop for s in slot-definitions
+                                             collect (slot-name s)))
+             (declare ,@(loop for s in slot-definitions
+                              collect `(type ,(slot-type s) ,(slot-name s))))
+             (let ((i ,index))
+               (declare (array-index i))
+               (labels ((extend-vectors ()
+                          (when (>= i (length ,(first slot-vectors)))
+                            ,@(loop for sv in slot-vectors
+                                    for s in slot-definitions
+                                    collect `(setf ,sv (replace (make-array (* 2 i) :element-type ',(slot-type s)) ,sv)))))
+                        (assign-slot-values ()
+                          ,@(loop for sv in slot-vectors
+                                  for s in slot-definitions
+                                  collect `(setf (aref ,sv ,index) (or ,(slot-name s) ,(slot-initform s))))))
+                 (extend-vectors)
+                 (assign-slot-values) 
                  (prog1
-                     ,i
-                   (incf ,index))))
-             ;;
-             ,@(loop for sa in slot-accessors
-                     for sv in slot-vectors
-                     for s in slot-definitions
-                     collect `(declaim (inline ,sa))
-                     collect `(defun ,sa (,(symbolicate name "-OBJECT"))
-                                (aref ,sv ,(symbolicate name "-OBJECT"))))
-             ))))))
+                     (the array-index i)
+                   (incf ,index)))))
+           ;;
+           ,@(loop for sa in slot-accessors
+                   for sv in slot-vectors
+                   for s in slot-definitions
+                   collect `(declaim (inline ,sa))
+                   collect `(defun ,sa (,(symbolicate name "-OBJECT"))
+                              (the ,(slot-type s) (aref ,sv ,(symbolicate name "-OBJECT")))))
+           ;;
+           (defun ,(symbolicate "RESET-" name) ()
+             (setf ,index 0)
+             ,@(loop for sv in slot-vectors
+                     for s in slot-definitions 
+                     collect `(setf ,sv (make-array 1 :element-type ',(slot-type s)))))
+           )))))
 
 (defmacro defstruct/v (name-and-options &rest slot-descriptions)
   (expander-for-defstruct name-and-options slot-descriptions))
