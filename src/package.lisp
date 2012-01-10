@@ -15,6 +15,7 @@
            #:static-if
            #:static-cond
            #:static-case
-           #:static-inline 
+           #:static-inline
+           #:defstruct/v 
            ))
 

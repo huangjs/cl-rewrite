@@ -24,7 +24,9 @@
                  ;;
                  (:file "structure-sharing")
                  (:file "match")
-                 (:file "transform") 
+                 (:file "transform")
+                 ;;
+                 (:file "vectorized-struct")
                  )))
   :depends-on (:alexandria
                ;; :parse-declarations-1.0
